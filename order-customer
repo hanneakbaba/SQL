@@ -1,0 +1,189 @@
+create table Customers
+(
+    CustomerID int primary key identity,
+    FirstName varchar(50) not null,
+    LastName varchar(50) not null,
+    Email varchar(100),
+    Phone varchar(20)
+)
+
+create table Products (
+    ProductID int primary key identity,
+    ProductName varchar(100) not null,
+    Price decimal(10,2) not null,
+    Stock int not null
+)
+
+create table Orders 
+(
+    OrderID int primary key identity,
+    CustomerID int not null,
+    OrderDate date not null,
+    TotalAmount decimal(10,2),
+    foreign key (CustomerID)
+        references Customers(CustomerID)
+)
+
+create table OrderDetails 
+(
+    OrderDetailID int primary key identity,
+    OrderID int not null,
+    ProductID int not null,
+    Quantity int not null,
+    UnitPrice decimal(10,2) not null,
+
+    foreign key (OrderID)
+        references Orders(OrderID),
+
+    foreign key (ProductID)
+        references Products(ProductID)
+)
+
+insert into Customers
+(FirstName, LastName, Email, Phone)
+values
+('John', 'Smith', 'john@gmail.com', '5551234567')
+
+insert into Products
+(ProductName, Price, Stock)
+values 
+('Laptop', 1200.00, 50),
+('Mouse', 25.00, 100),
+('Keyboard', 60.00, 75)
+
+insert into Orders
+(CustomerID, OrderDate, TotalAmount)
+values
+(1, '2026-07-22', 1250.00)
+
+insert into OrderDetails
+(OrderID, ProductID, Quantity, UnitPrice)
+values
+(1, 1, 1, 1200.00),
+(1, 2, 2, 25.00)
+
+select * from Orders
+select * from customers
+
+update customers set CityNo = 34 where customerId=1
+
+#hangi tarihlerde hangi müşterilere hangi ürün satıldı
+
+select o.OrderDate, c.FirstName + ' ' + c.LastName customername, p.ProductName, Quantity, UnitPrice, quantity*unitprice toplam, ci.CityName
+from orders o
+join customers c on o.customerId=o.customerId
+join OrderDetails od on od.OrderID=o.OrderID
+join Products p on p.ProductId=od.ProductID
+join City ci on ci.CityNo=c.CityNo
+
+drop table product
+
+alter table customers add CityNo int null
+
+
+#adres, kargo, sipariş durumu ekle
+
+create table Addresses
+(
+    AddressID int primary key identity,
+    CustomerID int not null,
+    AddressTitle varchar(50) not null,
+    AddressText varchar(250) not null,
+    CityNo int not null,
+    PostalCode varchar(10),
+    
+    foreign key (CustomerID)
+        references Customers(CustomerID)
+)
+
+insert into Addresses
+(CustomerID, AddressTitle, AddressText, CityNo, PostalCode)
+values
+(1, 'Home', 'Kadıköy Istanbul', 34, '34710')
+
+
+create table OrderStatus
+(
+    StatusID int primary key identity,
+    StatusName varchar(50) not null
+)
+
+insert into OrderStatus (StatusName)
+values
+('Waiting'),
+('Prepearing'),
+('Shipped'),
+('Delivered'),
+('Canceled')
+
+alter table Orders
+add StatusID int
+
+alter table Orders
+add constraint FK_Orders_Status
+foreign key (StatusID)
+references OrderStatus(StatusID)
+
+
+create table Payments
+(
+    PaymentID int primary key identity,
+    OrderID int not null,
+    PaymentType varchar(50) not null,
+    PaymentDate datetime default getdate(),
+    Amount decimal(10,2) not null,
+
+    foreign key (OrderID)
+        references Orders(OrderID)
+)
+
+insert into Payments
+(OrderID, PaymentType, Amount)
+values
+(1, 'Credit Card', 1250.00),
+(2, 'Cash', 500.00),
+(3, 'Bank Transfer', 750.00)
+
+create table Shippings
+(
+    ShippingID int primary key identity,
+    OrderID int not null,
+    CompanyName varchar(50) not null,
+    TrackingNo varchar(100),
+    ShippingDate datetime,
+    DeliveryDate datetime,
+
+    foreign key (OrderID)
+        references Orders(OrderID)
+)
+
+insert into Shippings
+(OrderID, CompanyName, TrackingNo, ShippingDate)
+values
+(1, 'Yurtici Kargo', 'YT123456789', getdate())
+
+
+select * from Addresses, Orders, OrderStatus 
+
+select o.OrderID,o.OrderDate, c.FirstName + ' ' + c.LastName as CustomerName,
+os.StatusName as OrderStatus,
+p.ProductName,
+od.Quantity,
+od.UnitPrice,
+pay.PaymentType,
+pay.Amount,
+s.CompanyName,
+s.TrackingNo
+
+from Orders o
+join Customers c on c.CustomerID = o.CustomerID
+
+join OrderStatus os on os.StatusID = o.StatusID
+
+join OrderDetails od on od.OrderID = o.OrderID
+
+join Products p on p.ProductID = od.ProductID
+
+left join Payments pay on pay.OrderID = o.OrderID
+
+left join Shippings s on s.OrderID = o.OrderID
