@@ -1,0 +1,101 @@
+CREATE DATABASE StudentGradeTrackingDB
+GO
+
+USE StudentGradeTrackingDB;
+GO
+
+CREATE TABLE Departments (
+    DepartmentId INT IDENTITY(1,1) PRIMARY KEY,
+    DepartmentName NVARCHAR(100) NOT NULL UNIQUE
+)
+
+CREATE TABLE Students (
+    StudentId INT IDENTITY(1,1) PRIMARY KEY,
+    StudentNumber VARCHAR(20) NOT NULL UNIQUE,
+    FirstName NVARCHAR(50) NOT NULL,
+    LastName NVARCHAR(50) NOT NULL,
+    Email VARCHAR(150) UNIQUE,
+    BirthDate DATE,
+    DepartmentId INT NOT NULL,
+    EnrollmentDate DATE DEFAULT GETDATE(),
+
+    FOREIGN KEY (DepartmentId) REFERENCES Departments(DepartmentId)
+)
+
+CREATE TABLE Courses (
+    CourseId INT IDENTITY(1,1) PRIMARY KEY,
+    CourseCode VARCHAR(15) NOT NULL UNIQUE,
+    CourseName NVARCHAR(100) NOT NULL,
+    Credit TINYINT NOT NULL CHECK (Credit BETWEEN 1 AND 10),
+    DepartmentId INT NOT NULL,
+
+    FOREIGN KEY (DepartmentId) REFERENCES Departments(DepartmentId)
+)
+
+CREATE TABLE Grades (
+    GradeId INT IDENTITY(1,1) PRIMARY KEY,
+    StudentId INT NOT NULL,
+    CourseId INT NOT NULL,
+    Midterm DECIMAL(5,2) CHECK (Midterm BETWEEN 0 AND 100),
+    FinalExam DECIMAL(5,2) CHECK (FinalExam BETWEEN 0 AND 100),
+    Semester VARCHAR(15) NOT NULL,
+
+    FOREIGN KEY (StudentId) REFERENCES Students(StudentId),
+    FOREIGN KEY (CourseId) REFERENCES Courses(CourseId),
+
+    UNIQUE (StudentId, CourseId, Semester)
+)
+
+INSERT INTO Departments (DepartmentName)
+VALUES
+('Computer Engineering'),
+('Software Engineering'),
+('Industrial Engineering')
+
+INSERT INTO Students
+(StudentNumber, FirstName, LastName, Email, BirthDate, DepartmentId)
+VALUES
+('2024001', 'Ayse', 'Yilmaz', 'ayse@school.com', '2004-05-16', 1),
+('2024002', 'Mehmet', 'Demir', 'mehmet@school.com', '2003-11-03', 1),
+('2024003', 'Elif', 'Kaya', 'elif@school.com', '2004-02-27', 2)
+
+INSERT INTO Courses
+(CourseCode, CourseName, Credit, DepartmentId)
+VALUES
+('CEN101', 'Introduction to Programming', 4, 1),
+('CEN201', 'Database Management Systems', 3, 1),
+('SEN101', 'Algorithms and Programming', 4, 2)
+
+INSERT INTO Grades
+(StudentId, CourseId, Midterm, FinalExam, Semester)
+VALUES
+(1, 1, 80, 90, '2024-Fall'),
+(1, 2, 75, 85, '2024-Fall'),
+(2, 1, 55, 48, '2024-Fall'),
+(2, 2, 60, 70, '2024-Fall'),
+(3, 3, 90, 92, '2024-Fall')
+
+CREATE VIEW vw_StudentGradeStatus
+AS
+SELECT
+    s.StudentNumber,
+    s.FirstName + ' ' + s.LastName AS Student,
+    c.CourseCode,
+    c.CourseName,
+    g.Semester,
+    g.Midterm,
+    g.FinalExam,
+    (g.Midterm * 0.40 + g.FinalExam * 0.60) AS FinalGrade,
+
+    CASE
+        WHEN (g.Midterm * 0.40 + g.FinalExam * 0.60) >= 50
+            THEN 'Passed'
+        ELSE 'Failed'
+    END AS Status
+
+FROM Grades g
+INNER JOIN Students s ON g.StudentId = s.StudentId
+INNER JOIN Courses c ON g.CourseId = c.CourseId;
+GO
+
+SELECT * FROM vw_StudentGradeStatus
